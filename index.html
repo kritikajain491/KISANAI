@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KISAN.AI — Smart Crop Advisor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --brand:#1f8a2e; --brand-dark:#166b22; --accent:#ff7a3d; --muted:#6b7280; --card:#ffffff; --glass: rgba(31,138,46,0.06);
+    }
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:'Poppins',system-ui,Arial;color:#111;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden; background: #6ec06e;}
+    canvas{position:fixed; top:0; left:0; z-index:-1;}
+    header.site-header{padding:28px 18px 12px;display:flex;align-items:center;gap:16px;justify-content:center;flex-direction:column;text-align:center;color:white; text-shadow:0 2px 6px rgba(0,0,0,0.3);}
+    .logo-row{display:flex;align-items:center;gap:12px}
+    .logo-mark{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:700;box-shadow:0 6px 18px rgba(16,95,26,0.12)}
+    .logo-mark svg{width:34px;height:34px;fill:white}
+    h1{margin:0;font-size:28px;letter-spacing:0.2px}
+    p.lead{margin:6px 0 0;color:rgba(255,255,255,0.9);max-width:880px;font-size:14px}
+
+    main{width:100%;max-width:1100px;margin:18px auto;padding:18px}
+    .panel{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 8px 30px rgba(16,95,26,0.06);}
+
+    .form-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .col-6{grid-column:span 6} .col-4{grid-column:span 4} .col-3{grid-column:span 3} .col-12{grid-column:span 12}
+    @media (max-width:860px){.col-6,.col-4,.col-3{grid-column:span 12}}
+
+    label{display:block;font-weight:600;margin-bottom:6px;font-size:13px;color:#0f2a10}
+    .input-group{display:flex;gap:8px;align-items:center}
+    input[type="text"], input[type="number"], select{flex:1;padding:11px 12px;border-radius:10px;border:1px solid #e6efe6;background:#fff;font-size:15px;outline:none;transition:box-shadow .18s, border-color .18s}
+    input:focus, select:focus{border-color:var(--brand);box-shadow:0 6px 18px var(--glass)}
+
+    .btn{border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .btn-primary{background:var(--brand);color:#fff;box-shadow:0 8px 20px rgba(31,138,46,0.12)}
+    .btn-primary:hover{background:var(--brand-dark)}
+    .btn-ghost{background:transparent;border:1px solid rgba(31,138,46,0.12);color:var(--brand)}
+
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .mic-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:linear-gradient(90deg,var(--accent),#ff6a2a);color:white;border:none;cursor:pointer;font-weight:700;box-shadow:0 8px 20px rgba(255,122,61,0.14)}
+    .mic-btn[disabled]{opacity:0.5;cursor:not-allowed}
+
+    .status{color:var(--muted);font-size:13px;margin-left:6px}
+
+    .results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-top:18px}
+    .card{background:linear-gradient(180deg,#fff, #fbfffb);border-radius:12px;padding:14px;border:1px solid rgba(18,68,18,0.04);box-shadow:0 6px 18px rgba(14,64,14,0.04);min-height:120px;display:flex;flex-direction:column;justify-content:center;transition:transform .18s ease,box-shadow .18s}
+    .card:hover{transform:translateY(-6px);box-shadow:0 18px 40px rgba(14,64,14,0.09)}
+    .card h3{margin:0;color:var(--brand);font-size:18px}
+    .muted{color:var(--muted);font-size:13px;margin-top:6px}
+    footer.site-foot{margin-top:auto;padding:18px;text-align:center;color:white;background:linear-gradient(90deg,var(--brand-dark),var(--brand));font-size:13px}
+
+    .fade-in{animation:fadeIn .45s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+<header class="site-header">
+  <div class="logo-row">
+    <div class="logo-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8 6 4 10 4 15c0 5 4 7 8 7s8-2 8-7c0-5-4-9-8-13z"/></svg>
+    </div>
+    <div style="text-align:left">
+      <h1>KISAN.AI</h1>
+      <div style="font-size:13px">Smart Crop Advisor — voice & location enabled</div>
+    </div>
+  </div>
+  <p class="lead">Fill in basic soil & weather info, or use the voice assistant. Press <strong>Recommend</strong> to get crop suggestions.</p>
+</header>
+
+<main>
+<section class="panel" aria-labelledby="formTitle">
+<h2 id="formTitle" style="margin:0 0 12px 0;font-size:16px;color:var(--brand)">Field details</h2>
+
+<div class="form-grid" role="form">
+  <div class="col-6">
+    <label for="location" data-key="Location">Location</label>
+    <div class="input-group"><input id="location" type="text" placeholder="City, District or Pincode"/></div>
+  </div>
+  <div class="col-6">
+    <label for="soil" data-key="Soil type">Soil type</label>
+    <div class="input-group"><input id="soil" type="text" placeholder="e.g., Loam, Sandy, Clay" /></div>
+  </div>
+  <div class="col-3"><label for="n" data-key="Nitrogen">Nitrogen (N)</label><div class="input-group"><input id="n" type="number" placeholder="90" /></div></div>
+  <div class="col-3"><label for="p" data-key="Phosphorus">Phosphorus (P)</label><div class="input-group"><input id="p" type="number" placeholder="42" /></div></div>
+  <div class="col-3"><label for="k" data-key="Potassium">Potassium (K)</label><div class="input-group"><input id="k" type="number" placeholder="43" /></div></div>
+  <div class="col-3"><label for="ph" data-key="pH">pH</label><div class="input-group"><input id="ph" type="number" step="0.1" min="0" max="14" placeholder="6.5"/></div></div>
+  <div class="col-6"><label for="temperature" data-key="Temperature">Temperature (°C)</label><div class="input-group"><input id="temperature" type="number" placeholder="24"/></div></div>
+  <div class="col-6"><label for="humidity" data-key="Humidity">Humidity (%)</label><div class="input-group"><input id="humidity" type="number" placeholder="65"/></div></div>
+
+  <div class="col-6">
+  <label for="language">Voice language</label>
+  <select id="language">
+    <option value="en-IN" selected>English</option>
+    <option value="hi-IN">Hindi</option>
+    <option value="mr-IN">Marathi</option>
+    <option value="gu-IN">Gujarati</option>
+    <option value="ta-IN">Tamil</option>
+    <option value="te-IN">Telugu</option>
+    <option value="bn-IN">Bengali</option>
+    <option value="kn-IN">Kannada</option>
+    <option value="ml-IN">Malayalam</option>
+    <option value="pa-IN">Punjabi</option>
+  </select>
+  </div>
+
+  <div class="col-12" style="margin-top:6px">
+    <div class="controls">
+      <button id="btnGlobalMic" class="mic-btn">🎙 Start Voice Input</button>
+      <button id="btnGPS" class="btn btn-ghost">📍 Use my location</button>
+      <button id="btnRecommend" class="btn btn-primary">Recommend</button>
+      <div class="status" id="status" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section id="resultsPanel" style="margin-top:18px;display:none">
+<h2 style="font-size:16px;color:var(--brand);margin-bottom:8px">Recommendations</h2>
+<div id="results" class="results-grid"></div>
+</section>
+</main>
+<footer class="site-foot">KISAN.AI — © <span id="year"></span> — Built for smart agriculture</footer>
+
+<script>
+// ===== Animated background =====
+const canvas=document.getElementById('bgCanvas'), ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
+
+class FloatingObject{
+  constructor(type){this.type=type;this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.size=type==='leaf'?5+Math.random()*10:50+Math.random()*80;this.speed=type==='leaf'?0.2+Math.random()*1:0.1+Math.random()*0.3;this.angle=Math.random()*Math.PI*2;this.color=type==='leaf'?`rgba(${50+Math.random()*50},${120+Math.random()*80},20,0.6)`:`rgba(255,255,255,0.3)`;}
+  update(){if(this.type==='leaf'){this.y+=this.speed;this.x+=Math.sin(this.angle)*0.5;this.angle+=0.01;if(this.y>canvas.height){this.y=-this.size;this.x=Math.random()*canvas.width;}}else{this.x+=this.speed;if(this.x-this.size>canvas.width){this.x=-this.size;this.y=Math.random()*canvas.height*0.5;}}}
+  draw(){ctx.beginPath();if(this.type==='leaf'){ctx.fillStyle=this.color;ctx.ellipse(this.x,this.y,this.size,this.size*0.6,this.angle,0,Math.PI*2);ctx.fill();}else{ctx.fillStyle=this.color;ctx.arc(this.x,this.y,this.size*0.6,0,Math.PI*2);ctx.fill();}}
+}
+const objects=[];for(let i=0;i<80;i++)objects.push(new FloatingObject('leaf'));for(let i=0;i<12;i++)objects.push(new FloatingObject('cloud'));
+function animate(){const grad=ctx.createLinearGradient(0,0,0,canvas.height);grad.addColorStop(0,'#6ec06e');grad.addColorStop(1,'#d0f0c0');ctx.fillStyle=grad;ctx.fillRect(0,0,canvas.width,canvas.height);objects.forEach(o=>{o.update();o.draw();});requestAnimationFrame(animate);}
+animate();
+
+// ===== Multilingual labels & crops =====
+const LANG_FIELDS = {
+  "hi-IN": {"Location":"स्थान","Soil type":"मिट्टी का प्रकार","Nitrogen":"नाइट्रोजन","Phosphorus":"फॉस्फोरस","Potassium":"पोटेशियम","pH":"पीएच","Temperature":"तापमान","Humidity":"नमी"},
+  "mr-IN": {"Location":"स्थान","Soil type":"मातीचा प्रकार","Nitrogen":"नायट्रोजन","Phosphorus":"फॉस्फरस","Potassium":"पोटॅशियम","pH":"पीएच","Temperature":"तापमान","Humidity":"आर्द्रता"},
+  "gu-IN": {"Location":"સ્થાન","Soil type":"માટીનો પ્રકાર","Nitrogen":"નાઇટ્રોજન","Phosphorus":"ફોસ્ફરસ","Potassium":"પોટેશિયમ","pH":"પીએચ","Temperature":"તાપમાન","Humidity":"આર્દ્રતા"},
+  "ta-IN": {"Location":"இடம்","Soil type":"மண் வகை","Nitrogen":"நைட்ரஜன்","Phosphorus":"பாஸ்பரஸ்","Potassium":"பொட்டாசியம்","pH":"பிஎச்","Temperature":"வெப்பநிலை","Humidity":" ஈரப்பதம்"},
+  "te-IN": {"Location":"స్థానం","Soil type":"మట్టి రకం","Nitrogen":"నత్రజని","Phosphorus":"ఫాస్ఫరస్","Potassium":"పొటాషియం","pH":"పిహెచ్","Temperature":"తాపన","Humidity":"ఇరిడి"},
+  "bn-IN": {"Location":"অবস্থান","Soil type":"মাটি ধরন","Nitrogen":"নাইট্রোজেন","Phosphorus":"ফসফরাস","Potassium":"পটাশিয়াম","pH":"পিএইচ","Temperature":"তাপমাত্রা","Humidity":"আর্দ্রতা"},
+  "kn-IN": {"Location":"ಸ್ಥಳ","Soil type":"ಮಣ್ಣು ಪ್ರಕಾರ","Nitrogen":"ನೈಟ್ರೋಜನ್","Phosphorus":"ಫಾಸ್ಫೋರಸ್","Potassium":"ಪೊಟಾಶಿಯಮ್","pH":"ಪಿ‌ಎಚ್","Temperature":"ತಾಪಮಾನ","Humidity":"ಆದ್ರತೆ"},
+  "ml-IN": {"Location":"സ്ഥലം","Soil type":"മണ്ണ് തരം","Nitrogen":"നൈറ്റ്രജൻ","Phosphorus":"ഫോസ്ഫറസ്","Potassium":"പൊട്ടാസ്യം","pH":"പി.എച്ച്","Temperature":"താപനില","Humidity":"ഇർദ്രത"},
+  "pa-IN": {"Location":"ਸਥਾਨ","Soil type":"ਮਿੱਟੀ ਦਾ ਕਿਸਮ","Nitrogen":"ਨਾਈਟ੍ਰੋਜਨ","Phosphorus":"ਫਾਸਫੋਰਸ","Potassium":"ਪੋਟੈਸ਼ਿਯਮ","pH":"ਪੀਐਚ","Temperature":"ਤਾਪਮਾਨ","Humidity":"ਨਮੀ"}
+};
+
+const TRANSLATIONS={
+  "hi-IN":{"Wheat":"गेहूं","Rice":"धान","Chickpea":"चना","Mustard":"सरसों","General good fit":"सामान्य उपयुक्तता"},
+  "mr-IN":{"Wheat":"गहू","Rice":"भात","Chickpea":"हरभरा","Mustard":"मोहरी","General good fit":"सामान्य उपयुक्त"},
+  "gu-IN":{"Wheat":"ગહું","Rice":"ચોખા","Chickpea":"ચણો","Mustard":"સરસો","General good fit":"સામાન્ય રીતે યોગ્ય"},
+  "ta-IN":{"Wheat":"கோதுமை","Rice":"அரிசி","Chickpea":"கேசு","Mustard":"மாஸ்டர்","General good fit":"பொதுவாக பொருத்தமானது"},
+  "te-IN":{"Wheat":"గోధుమ","Rice":"బియ్యం","Chickpea":"చిక్పి","Mustard":"మస్టర్డ్","General good fit":"సాధారణంగా సరైనది"},
+  "bn-IN":{"Wheat":"গম","Rice":"চাল","Chickpea":"ছোলা","Mustard":"সরিষা","General good fit":"সাধারণভাবে উপযুক্ত"},
+  "kn-IN":{"Wheat":"ಗೋಧಿ","Rice":"ಅನ್ನ","Chickpea":"ಕಾಬುಳಚಣೆ","Mustard":"ಸಾಸಿವೆ","General good fit":"ಸಾಮಾನ್ಯವಾಗಿ ಸೂಕ್ತವಾಗಿದೆ"},
+  "ml-IN":{"Wheat":"ഗോഹം","Rice":"അരി","Chickpea":"ചണ","Mustard":"മസ്റ്റാർഡ്","General good fit":"സാധാരണയായി അനുയോജ്യം"},
+  "pa-IN":{"Wheat":"ਗੰਹੂ","Rice":"ਚੌਲ","Chickpea":"ਚਣਾ","Mustard":"ਸਰੋਂ","General good fit":"ਆਮ ਤੌਰ 'ਤੇ ਢੁਕਵਾਂ"}
+};
+
+// ===== Dynamic tab/label translation =====
+const languageSelect = document.getElementById('language');
+languageSelect.addEventListener('change',()=>{const lang=languageSelect.value;
+  document.querySelectorAll('[data-key]').forEach(el=>{const key=el.dataset.key; el.textContent=(LANG_FIELDS[lang]&&LANG_FIELDS[lang][key])||key;});
+});
+
+// ===== Gather inputs =====
+const fieldsOrder=['location','soil','n','p','k','ph','temperature','humidity'];
+function getFieldValue(id){const el=document.getElementById(id);if(!el)return null;const val=el.value.trim();if(val==='')return null;if(['n','p','k','ph','temperature','humidity'].includes(id)){const num=Number(val);return Number.isFinite(num)?num:null;}return val;}
+function gatherInputs(){let obj={};fieldsOrder.forEach(f=>obj[f]=getFieldValue(f));return obj;}
+
+// ===== Recommend logic =====
+function recommendFromInputs(inputs){
+const {n,p,k,ph,soil}=inputs; const lang=document.getElementById('language').value; const recs=[];
+if(ph!==null){if(ph<5.8) recs.push({name:'Rice',reason:'Acidic soil favors Rice',score:95}); else if(ph<=7.5) recs.push({name:'Wheat',reason:'Neutral soil suitable for Wheat',score:85}); else recs.push({name:'Mustard',reason:'Alkaline soil suits Mustard',score:70});}
+if(n!==null&&n>120) recs.unshift({name:'Sugarcane',reason:'Very high Nitrogen',score:90});
+if(p!==null&&p>60&&n<60) recs.push({name:'Chickpea',reason:'High Phosphorus + low Nitrogen favors legumes',score:75});
+if(k!==null&&k>140) recs.push({name:'Potato',reason:'High Potassium favors tuber crops',score:78});
+if(soil&&/sandy/i.test(soil)) recs.push({name:'Pearl millet',reason:'Sandy soils suit drought-tolerant millets',score:65});
+if(recs.length===0) recs.push({name:'Wheat',reason:'General good fit',score:60},{name:'Chickpea',reason:'Protein crop alternative',score:55});
+recs.sort((a,b)=>b.score-a.score);const seen=new Set(); const out=[]; for(const r of recs){if(!seen.has(r.name)){out.push(r);seen.add(r.name);} if(out.length>=3)break;}return out;
+}
+
+// ===== Render recommendations =====
+function t(lang,key){return (TRANSLATIONS[lang]&&TRANSLATIONS[lang][key])||key;}
+function renderRecommendations(list){
+const resultsEl=document.getElementById('results'); const lang=document.getElementById('language').value;
+resultsEl.innerHTML=''; list.forEach(item=>{const card=document.createElement('div'); card.className='card fade-in';
+card.innerHTML=`<h3>${t(lang,item.name)}</h3><div class="muted">${item.reason}</div><div style="margin-top:12px;font-weight:700;color:var(--brand)">${item.score}% match</div>`; resultsEl.appendChild(card);});
+document.getElementById('resultsPanel').style.display='block'; document.getElementById('resultsPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ===== Global mic =====
+let recognitionActive=false,currentRecognition=null;
+function getNextEmptyField(){for(const id of fieldsOrder){if(getFieldValue(id)===null)return id;}return null;}
+function startGlobalListening(){
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('Speech recognition not supported');return;}
+if(recognitionActive){try{currentRecognition.stop();}catch(e){}recognitionActive=false;currentRecognition=null;document.getElementById('btnGlobalMic').textContent='🎙 Start Voice Input';return;}
+let targetId=getNextEmptyField(); if(!targetId){document.getElementById('status').textContent='All fields filled';return;}
+const rec=new SR(); currentRecognition=rec; recognitionActive=true; rec.lang=document.getElementById('language').value||'en-IN'; rec.interimResults=false; rec.maxAlternatives=1;
+document.getElementById('btnGlobalMic').textContent='● Listening...'; document.getElementById('status').textContent=`Listening for: ${targetId}`;
+rec.onresult=(ev)=>{let text=ev.results[0][0].transcript.trim(); const numeric=['n','p','k','ph','temperature','humidity'];
+if(numeric.includes(targetId)){const num=parseFloat(text.replace(/point/gi,'.').replace(/[^0-9.-]+/g,'')); if(Number.isFinite(num)){document.getElementById(targetId).value=num; document.getElementById('status').textContent=`Filled ${targetId} with ${num}`;} else {document.getElementById('status').textContent=`Cannot parse number from "${text}"`;}}
+else {document.getElementById(targetId).value=text; document.getElementById('status').textContent=`Filled ${targetId} with "${text}"`;}
+try{rec.stop();}catch(e){} recognitionActive=false; currentRecognition=null; document.getElementById('btnGlobalMic').textContent='🎙 Start Voice Input';
+const next=getNextEmptyField(); if(next){document.getElementById(next).focus(); startGlobalListening();}}; 
+rec.onend=()=>{recognitionActive=false; currentRecognition=null; document.getElementById('btnGlobalMic').textContent='🎙 Start Voice Input';};
+rec.onerror=(e)=>{recognitionActive=false; currentRecognition=null; document.getElementById('btnGlobalMic').textContent='🎙 Start Voice Input'; document.getElementById('status').textContent='Voice error: '+(e.error||'unknown');}; rec.start();
+}
+document.getElementById('btnGlobalMic').addEventListener('click',startGlobalListening);
+
+// ===== GPS =====
+document.getElementById('btnGPS').addEventListener('click',()=>{
+const status=document.getElementById('status'); if(!navigator.geolocation){alert('Geolocation not available'); return;}
+status.textContent='Detecting location...';
+navigator.geolocation.getCurrentPosition(async(pos)=>{
+const lat=pos.coords.latitude.toFixed(4), lon=pos.coords.longitude.toFixed(4);
+try{const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+const data=await res.json();
+const address=(data.address&&(data.address.city||data.address.town||data.address.village))||data.display_name||`${lat},${lon}`;
+document.getElementById('location').value=`${address} (${lat}, ${lon})`; status.textContent=`Location detected: ${address}`;} catch(err){document.getElementById('location').value=`${lat},${lon}`; status.textContent='Location coordinates filled';}},(err)=>{status.textContent='Location error: '+err.message;},{timeout:10000});
+});
+
+// ===== Recommend button =====
+document.getElementById('btnRecommend').addEventListener('click',()=>{
+document.getElementById('status').textContent='Computing recommendations...';
+const inputs=gatherInputs(); const recs=recommendFromInputs(inputs); renderRecommendations(recs);
+document.getElementById('status').textContent=`Showing ${recs.length} recommendations`;
+});
+
+// ===== Focus helper =====
+fieldsOrder.forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('focus',()=>document.getElementById('status').textContent=`Focused on ${id} — click mic to overwrite`);});
+
+document.getElementById('year').textContent=new Date().getFullYear();
+</script>
+</body>
+</html>
